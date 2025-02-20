@@ -281,7 +281,7 @@ public class InstaDotView extends View {
     }
 
     public void onPageChange(int page) {
-        this.onPageChange(int page, true);
+        this.onPageChange(page, true);
     }
     
     public void onPageChange(int page, boolean animate) {
