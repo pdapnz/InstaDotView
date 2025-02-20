@@ -214,6 +214,8 @@ public class InstaDotView extends View {
         //Hide if noOfPages is 0 or 1
         setVisibility(noOfPages <= 1 ? GONE : VISIBLE);
         this.noOfPages = noOfPages;
+        this.previousPage = 0;
+        this.currentPage = 0;
         recreate();
     }
 
@@ -279,14 +281,18 @@ public class InstaDotView extends View {
     }
 
     public void onPageChange(int page) {
+        this.onPageChange(int page, true);
+    }
+    
+    public void onPageChange(int page, boolean animate) {
         this.currentPage = page;
         if (page != previousPage && page >= 0 && page <= getNoOfPages() - 1) {
-            updateDots();
+            updateDots(animate);
             previousPage = currentPage;
         }
     }
 
-    private void updateDots() {
+    private void updateDots(boolean animate) {
 
         //If pages does not exceed DOT COUNT limit
         if (noOfPages <= visibleDotCounts) {
@@ -303,10 +309,10 @@ public class InstaDotView extends View {
                 currentDot.setState(Dot.State.INACTIVE);
                 //Left to right
                 if (currentPage > previousPage) {
-                    setupFlexibleCirclesRight(i);
+                    setupFlexibleCirclesRight(i, animate);
                 } else {
                     //Right to left
-                    setupFlexibleCirclesLeft(i);
+                    setupFlexibleCirclesLeft(i, animate);
                 }
                 return;
             }
@@ -315,13 +321,16 @@ public class InstaDotView extends View {
     }
 
     private void setupNormalDots() {
-        dotsList.get(currentPage).setState(Dot.State.ACTIVE);
-        dotsList.get(previousPage).setState(Dot.State.INACTIVE);
-
+        if (dotsList.size() > currentPage) {
+            dotsList.get(currentPage).setState(Dot.State.ACTIVE);
+        }
+        if (dotsList.size() > previousPage) {
+            dotsList.get(previousPage).setState(Dot.State.INACTIVE);
+        }
         invalidate();
     }
 
-    private void setupFlexibleCirclesRight(final int position) {
+    private void setupFlexibleCirclesRight(final int position, boolean animate) {
         //If position exceed last two dots
         if (position >= getVisibleDotCounts() - 3) {
             if (currentPage == getNoOfPages() - 1) {
@@ -334,7 +343,7 @@ public class InstaDotView extends View {
                 dotsList.get(dotsList.size() - 2).setState(Dot.State.ACTIVE);
                 invalidate();
             } else {
-                removeAddRight(position);
+                removeAddRight(position, animate);
             }
         } else {
             dotsList.get(position + 1).setState(Dot.State.ACTIVE);
@@ -342,25 +351,35 @@ public class InstaDotView extends View {
         }
     }
 
-    private void removeAddRight(final int position) {
+    private void removeAddRight(final int position, boolean animate) {
         dotsList.remove(0);
-        setStartPosX(getStartPosX() + getSmallDotStartX());
+        if (animate) {
+            setStartPosX(getStartPosX() + getSmallDotStartX());
+            getTranslationAnimation(getStartPosX(), getSmallDotStartX(), new AnimationListener() {
+                @Override
+                public void onAnimationEnd() {
+                    dotsList.get(0).setState(Dot.State.SMALL);
+                    dotsList.get(1).setState(Dot.State.MEDIUM);
 
-        getTranslationAnimation(getStartPosX(), getSmallDotStartX(), new AnimationListener() {
-            @Override
-            public void onAnimationEnd() {
-                dotsList.get(0).setState(Dot.State.SMALL);
-                dotsList.get(1).setState(Dot.State.MEDIUM);
+                    Dot newDot = new Dot();
+                    newDot.setState(Dot.State.ACTIVE);
+                    dotsList.add(position, newDot);
+                    invalidate();
+                }
+            }).start();
+        } else {
+            setStartPosX(getSmallDotStartX());
+            dotsList.get(0).setState(Dot.State.SMALL);
+            dotsList.get(1).setState(Dot.State.MEDIUM);
 
-                Dot newDot = new Dot();
-                newDot.setState(Dot.State.ACTIVE);
-                dotsList.add(position, newDot);
-                invalidate();
-            }
-        }).start();
+            Dot newDot = new Dot();
+            newDot.setState(Dot.State.ACTIVE);
+            dotsList.add(position, newDot);
+            invalidate();
+        }
     }
 
-    private void setupFlexibleCirclesLeft(final int position) {
+    private void setupFlexibleCirclesLeft(final int position, boolean animate) {
         //If position exceed first two dots
         if (position <= 2) {
             if (currentPage == 0) {
@@ -373,7 +392,7 @@ public class InstaDotView extends View {
                 dotsList.get(1).setState(Dot.State.ACTIVE);
                 invalidate();
             } else {
-                removeAddLeft(position);
+                removeAddLeft(position, animate);
             }
         } else {
             dotsList.get(position - 1).setState(Dot.State.ACTIVE);
@@ -381,22 +400,32 @@ public class InstaDotView extends View {
         }
     }
 
-    private void removeAddLeft(final int position) {
+    private void removeAddLeft(final int position, boolean animate) {
         dotsList.remove(dotsList.size() - 1);
-        setStartPosX(0);
+        if (animate) {
+            setStartPosX(0);
+            getTranslationAnimation(getStartPosX(), getSmallDotStartX(), new AnimationListener() {
+                @Override
+                public void onAnimationEnd() {
+                    dotsList.get(dotsList.size() - 1).setState(Dot.State.SMALL);
+                    dotsList.get(dotsList.size() - 2).setState(Dot.State.MEDIUM);
 
-        getTranslationAnimation(getStartPosX(), getSmallDotStartX(), new AnimationListener() {
-            @Override
-            public void onAnimationEnd() {
-                dotsList.get(dotsList.size() - 1).setState(Dot.State.SMALL);
-                dotsList.get(dotsList.size() - 2).setState(Dot.State.MEDIUM);
+                    Dot newDot = new Dot();
+                    newDot.setState(Dot.State.ACTIVE);
+                    dotsList.add(position, newDot);
+                    invalidate();
+                }
+            }).start();
+        } else {
+            setStartPosX(getSmallDotStartX());
+            dotsList.get(dotsList.size() - 1).setState(Dot.State.SMALL);
+            dotsList.get(dotsList.size() - 2).setState(Dot.State.MEDIUM);
 
-                Dot newDot = new Dot();
-                newDot.setState(Dot.State.ACTIVE);
-                dotsList.add(position, newDot);
-                invalidate();
-            }
-        }).start();
+            Dot newDot = new Dot();
+            newDot.setState(Dot.State.ACTIVE);
+            dotsList.add(position, newDot);
+            invalidate();
+        }
     }
 
 }
